@@ -220,6 +220,7 @@ export default function EditView({
                 items={DEFAULT_ROM_ITEMS}
                 data={romData}
                 unit="°"
+                step={5}
                 onChange={(key, side, value) => updateRomMmt(setRomData, key, side, value)}
               />
               <RomMmtEditor

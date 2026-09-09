@@ -1,30 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-interface UserOption {
-  id: number;
-  name: string;
-}
 
 export default function LoginPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<UserOption[]>([]);
-  const [userId, setUserId] = useState<string>("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/users")
-      .then((res) => res.json())
-      .then((data: UserOption[]) => {
-        setUsers(data);
-        if (data.length > 0) setUserId(String(data[0].id));
-      })
-      .catch(() => setError("利用者一覧の取得に失敗しました。"));
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,11 +17,11 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: Number(userId), password }),
+        body: JSON.stringify({ password }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "氏名または合言葉が正しくありません");
+        setError(data.error || "合言葉が正しくありません");
         setLoading(false);
         return;
       }
@@ -58,23 +41,6 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-navy mb-1">氏名</label>
-            <select
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              className="w-full border border-navy/20 rounded-lg px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-main"
-              required
-            >
-              {users.length === 0 && <option value="">読み込み中...</option>}
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
             <label className="block text-sm font-medium text-navy mb-1">合言葉</label>
             <input
               type="password"
@@ -82,6 +48,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full border border-navy/20 rounded-lg px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-main"
               required
+              autoFocus
             />
           </div>
 
@@ -89,7 +56,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading || !userId}
+            disabled={loading}
             className="w-full bg-main text-navy font-semibold rounded-lg py-3 disabled:opacity-50"
           >
             {loading ? "ログイン中..." : "ログイン"}
