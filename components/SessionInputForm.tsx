@@ -350,6 +350,7 @@ export default function SessionInputForm({
           items={DEFAULT_ROM_ITEMS}
           data={romData}
           unit="°"
+          step={5}
           onChange={(key, side, value) => updateRomMmt(setRomData, key, side, value)}
         />
       </section>

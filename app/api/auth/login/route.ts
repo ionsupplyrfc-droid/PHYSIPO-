@@ -15,11 +15,10 @@ function safeEqual(a: string, b: string): boolean {
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
-  const userId = body?.userId;
   const password = body?.password;
 
-  if (!userId || typeof password !== "string" || password.length === 0) {
-    return NextResponse.json({ error: "氏名または合言葉が正しくありません" }, { status: 401 });
+  if (typeof password !== "string" || password.length === 0) {
+    return NextResponse.json({ error: "合言葉が正しくありません" }, { status: 401 });
   }
 
   const sharedPassword = process.env.APP_SHARED_PASSWORD;
@@ -31,13 +30,17 @@ export async function POST(req: NextRequest) {
   }
 
   if (!safeEqual(password, sharedPassword)) {
-    return NextResponse.json({ error: "氏名または合言葉が正しくありません" }, { status: 401 });
+    return NextResponse.json({ error: "合言葉が正しくありません" }, { status: 401 });
   }
 
-  const rows = await sql`select id, name, role from users where id = ${userId}`;
+  // 本人専用アプリのため、氏名選択は行わず登録済みの利用者（role: player）を自動的にログイン対象とする。
+  const rows = await sql`select id, name, role from users where role = 'player' order by id asc limit 1`;
   const user = rows[0] as { id: number; name: string; role: Role } | undefined;
   if (!user) {
-    return NextResponse.json({ error: "氏名または合言葉が正しくありません" }, { status: 401 });
+    return NextResponse.json(
+      { error: "利用者が登録されていません。管理者に連絡してください。" },
+      { status: 500 }
+    );
   }
 
   const token = signSession({ userId: user.id, name: user.name, role: user.role });

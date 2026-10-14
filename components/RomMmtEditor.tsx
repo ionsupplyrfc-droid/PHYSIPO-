@@ -15,12 +15,14 @@ export default function RomMmtEditor({
   data,
   onChange,
   unit,
+  step,
 }: {
   title: string;
   items: Item[];
   data: RomMmtData;
   onChange: (key: string, side: "left" | "right", value: number) => void;
   unit?: string;
+  step?: number;
 }) {
   return (
     <div>
@@ -42,6 +44,7 @@ export default function RomMmtEditor({
                       type="range"
                       min={item.min}
                       max={item.max}
+                      step={step ?? 1}
                       value={entry[side]}
                       onChange={(e) => onChange(item.key, side, Number(e.target.value))}
                       className="flex-1"
