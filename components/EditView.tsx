@@ -6,7 +6,7 @@ import { DEFAULT_MMT_ITEMS, DEFAULT_ROM_ITEMS } from "@/lib/constants";
 import { RomMmtData, SessionRecord } from "@/lib/types";
 import RomMmtEditor from "./RomMmtEditor";
 import TagInput from "./TagInput";
-import CreatableSelect from "./CreatableSelect";
+import MultiCreatableSelect from "./MultiCreatableSelect";
 import DiseaseSpecificFields from "./DiseaseSpecificFields";
 
 interface NameOption {
@@ -35,7 +35,7 @@ export default function EditView({
   const [romData, setRomData] = useState<RomMmtData>({});
   const [mmtData, setMmtData] = useState<RomMmtData>({});
   const [diseaseSpecific, setDiseaseSpecific] = useState<Record<string, unknown>>({});
-  const [interventionContent, setInterventionContent] = useState("");
+  const [interventionContents, setInterventionContents] = useState<string[]>([]);
   const [assessment, setAssessment] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -52,7 +52,14 @@ export default function EditView({
     setRomData(s.rom_data ?? {});
     setMmtData(s.mmt_data ?? {});
     setDiseaseSpecific(s.disease_specific_data ?? {});
-    setInterventionContent(s.intervention_content ?? "");
+    // 過去データ（介入内容が1つだけ）も、1件選択された状態で開く
+    setInterventionContents(
+      s.intervention_contents && s.intervention_contents.length > 0
+        ? s.intervention_contents
+        : s.intervention_content
+          ? [s.intervention_content]
+          : []
+    );
     setAssessment(s.assessment ?? "");
     setMessage("");
   }
@@ -80,7 +87,7 @@ export default function EditView({
           romData,
           mmtData,
           diseaseSpecificData: diseaseSpecific,
-          interventionContent,
+          interventionContents,
           assessment,
           tags,
         }),
@@ -99,7 +106,8 @@ export default function EditView({
                 rom_data: romData,
                 mmt_data: mmtData,
                 disease_specific_data: diseaseSpecific,
-                intervention_content: interventionContent,
+                intervention_content: interventionContents.join("、"),
+                intervention_contents: interventionContents,
                 assessment,
                 tags,
               }
@@ -239,9 +247,9 @@ export default function EditView({
 
             <div>
               <label className="block text-sm font-medium text-navy mb-1">介入内容（実施した訓練メニュー）</label>
-              <CreatableSelect
-                value={interventionContent}
-                onChange={setInterventionContent}
+              <MultiCreatableSelect
+                value={interventionContents}
+                onChange={setInterventionContents}
                 options={menuOptions}
                 onCreated={(name) =>
                   setMenuOptions((prev) => (prev.some((m) => m.name === name) ? prev : [...prev, { id: -Date.now(), name }]))

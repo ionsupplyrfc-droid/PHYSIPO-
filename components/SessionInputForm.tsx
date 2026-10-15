@@ -12,7 +12,7 @@ import {
 import { DiseaseCategory, RomMmtData } from "@/lib/types";
 import RomMmtEditor from "./RomMmtEditor";
 import TagInput from "./TagInput";
-import CreatableSelect from "./CreatableSelect";
+import MultiCreatableSelect from "./MultiCreatableSelect";
 import DiseaseSpecificFields, { buildDefaultDiseaseSpecific } from "./DiseaseSpecificFields";
 
 interface CaseOption {
@@ -72,7 +72,7 @@ export default function SessionInputForm({
   const [diseaseSpecific, setDiseaseSpecific] = useState<Record<string, unknown>>(
     buildDefaultDiseaseSpecific("脳血管")
   );
-  const [interventionContent, setInterventionContent] = useState("");
+  const [interventionContents, setInterventionContents] = useState<string[]>([]);
   const [assessment, setAssessment] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -94,7 +94,7 @@ export default function SessionInputForm({
     setTags([]);
     setAge("");
     setInterventionDay("");
-    setInterventionContent("");
+    setInterventionContents([]);
     setAssessment("");
     setSelectedTemplateId("");
   }
@@ -149,7 +149,7 @@ export default function SessionInputForm({
     e.preventDefault();
     setMessage(null);
 
-    if (!interventionContent || !assessment.trim()) {
+    if (interventionContents.length === 0 || !assessment.trim()) {
       setMessage({ type: "error", text: "介入内容とAssessmentは必須です。" });
       return;
     }
@@ -191,7 +191,7 @@ export default function SessionInputForm({
           romData,
           mmtData,
           diseaseSpecificData: diseaseSpecific,
-          interventionContent,
+          interventionContents,
           assessment,
           tags,
         }),
@@ -379,9 +379,9 @@ export default function SessionInputForm({
           <label className="block text-sm font-medium text-navy mb-1">
             介入内容（実施した訓練メニュー）<span className="text-coral">必須</span>
           </label>
-          <CreatableSelect
-            value={interventionContent}
-            onChange={setInterventionContent}
+          <MultiCreatableSelect
+            value={interventionContents}
+            onChange={setInterventionContents}
             options={menuOptions}
             onCreated={(name) =>
               setMenuOptions((prev) => (prev.some((m) => m.name === name) ? prev : [...prev, { id: -Date.now(), name }]))

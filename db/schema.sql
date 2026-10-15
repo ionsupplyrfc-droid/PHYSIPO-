@@ -28,6 +28,8 @@ create table if not exists sessions (
   mmt_data jsonb not null default '{}'::jsonb,
   disease_specific_data jsonb not null default '{}'::jsonb,
   intervention_content text,
+  -- 介入内容（複数）。intervention_content には互換のため「、」区切りの文字列も保存する
+  intervention_contents text[] not null default '{}',
   assessment text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
