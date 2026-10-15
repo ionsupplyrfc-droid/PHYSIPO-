@@ -35,6 +35,7 @@ export interface SessionRecord {
   mmt_data: RomMmtData;
   disease_specific_data: Record<string, unknown>;
   intervention_content: string | null;
+  intervention_contents?: string[];
   assessment: string | null;
   created_at: string;
   updated_at: string;

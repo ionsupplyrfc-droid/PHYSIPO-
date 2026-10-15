@@ -93,29 +93,39 @@ function TemplateSaveForm({ sessionId, onSaved }: { sessionId: number; onSaved: 
 export default function SearchView({
   initialSessions,
   initialTagOptions,
+  initialInterventionOptions,
   isAdminView,
 }: {
   initialSessions: SessionRecord[];
   initialTagOptions: string[];
+  initialInterventionOptions: string[];
   isAdminView: boolean;
 }) {
   const [sessions, setSessions] = useState<SessionRecord[]>(initialSessions);
   const [diseaseCategory, setDiseaseCategory] = useState<string>("");
   const [tag, setTag] = useState<string>("");
+  const [intervention, setIntervention] = useState<string>("");
   const [keyword, setKeyword] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const tagOptions = useMemo(() => initialTagOptions, [initialTagOptions]);
 
-  async function runSearch(overrides?: { diseaseCategory?: string; tag?: string; keyword?: string }) {
+  async function runSearch(overrides?: {
+    diseaseCategory?: string;
+    tag?: string;
+    intervention?: string;
+    keyword?: string;
+  }) {
     setLoading(true);
     const params = new URLSearchParams();
     const dc = overrides?.diseaseCategory ?? diseaseCategory;
     const tg = overrides?.tag ?? tag;
+    const iv = overrides?.intervention ?? intervention;
     const kw = overrides?.keyword ?? keyword;
     if (dc) params.set("diseaseCategory", dc);
     if (tg) params.set("tag", tg);
+    if (iv) params.set("intervention", iv);
     if (kw) params.set("keyword", kw);
     try {
       const res = await fetch(`/api/sessions?${params.toString()}`);
@@ -130,8 +140,9 @@ export default function SearchView({
   function clearFilters() {
     setDiseaseCategory("");
     setTag("");
+    setIntervention("");
     setKeyword("");
-    runSearch({ diseaseCategory: "", tag: "", keyword: "" });
+    runSearch({ diseaseCategory: "", tag: "", intervention: "", keyword: "" });
   }
 
   return (
@@ -173,6 +184,21 @@ export default function SearchView({
             {tagOptions.map((t) => (
               <option key={t} value={t}>
                 {t}
+              </option>
+            ))}
+          </select>
+          <select
+            value={intervention}
+            onChange={(e) => {
+              setIntervention(e.target.value);
+              runSearch({ intervention: e.target.value });
+            }}
+            className="border border-navy/20 rounded-lg px-3 py-2 text-sm"
+          >
+            <option value="">介入内容：すべて</option>
+            {initialInterventionOptions.map((m) => (
+              <option key={m} value={m}>
+                {m}
               </option>
             ))}
           </select>
@@ -241,7 +267,19 @@ export default function SearchView({
                             </div>
                             <div>
                               <h4 className="text-sm font-semibold text-navy mb-1">介入内容</h4>
-                              <p className="text-sm">{s.intervention_content}</p>
+                              {/* 複数の介入内容をタグとして表示（過去データは1件のまま表示） */}
+                              <div className="flex flex-wrap gap-2">
+                                {(s.intervention_contents && s.intervention_contents.length > 0
+                                  ? s.intervention_contents
+                                  : s.intervention_content
+                                    ? [s.intervention_content]
+                                    : []
+                                ).map((name) => (
+                                  <span key={name} className="bg-main/20 text-navy text-sm rounded-full px-3 py-1">
+                                    {name}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                             <div className="grid sm:grid-cols-2 gap-4">
                               <RomMmtDryTable title="ROM（関節可動域）" data={s.rom_data} />

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
+import { normalizeInterventionContents } from "@/lib/sessions";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
@@ -22,11 +23,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     mmtData,
     diseaseSpecificData,
     interventionContent,
+    interventionContents,
     assessment,
     tags,
   } = body ?? {};
+  // 介入内容は複数選択（配列）。古い形式（文字列1つ）で送られてきても受け付ける
+  const contents = normalizeInterventionContents(interventionContents, interventionContent);
 
-  if (!interventionContent || !assessment) {
+  if (contents.length === 0 || !assessment) {
     return NextResponse.json({ error: "介入内容とAssessmentは必須です" }, { status: 400 });
   }
 
@@ -37,7 +41,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       rom_data = ${JSON.stringify(romData ?? {})},
       mmt_data = ${JSON.stringify(mmtData ?? {})},
       disease_specific_data = ${JSON.stringify(diseaseSpecificData ?? {})},
-      intervention_content = ${interventionContent},
+      intervention_content = ${contents.join("、")},
+      intervention_contents = ${contents}::text[],
       assessment = ${assessment},
       updated_at = now()
     where id = ${sessionId} and user_id = ${user.userId}

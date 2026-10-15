@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import { fetchSessions } from "@/lib/sessions";
+import { fetchSessions, normalizeInterventionContents } from "@/lib/sessions";
 
 export async function GET(req: NextRequest) {
   const user = await getSessionUser();
@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
   const rows = await fetchSessions(user, {
     diseaseCategory: searchParams.get("diseaseCategory"),
     tag: searchParams.get("tag"),
+    intervention: searchParams.get("intervention"),
     keyword: searchParams.get("keyword"),
   });
   return NextResponse.json(rows);
@@ -29,14 +30,17 @@ export async function POST(req: NextRequest) {
     mmtData,
     diseaseSpecificData,
     interventionContent,
+    interventionContents,
     assessment,
     tags,
   } = body ?? {};
+  // 介入内容は複数選択（配列）。古い形式（文字列1つ）で送られてきても受け付ける
+  const contents = normalizeInterventionContents(interventionContents, interventionContent);
 
   if (!caseId) {
     return NextResponse.json({ error: "症例を選択してください" }, { status: 400 });
   }
-  if (!interventionContent || !assessment) {
+  if (contents.length === 0 || !assessment) {
     return NextResponse.json(
       { error: "介入内容とAssessmentは必須です" },
       { status: 400 }
@@ -53,11 +57,11 @@ export async function POST(req: NextRequest) {
   const inserted = await sql`
     insert into sessions (
       case_id, user_id, intervention_day, age, rom_data, mmt_data,
-      disease_specific_data, intervention_content, assessment
+      disease_specific_data, intervention_content, intervention_contents, assessment
     ) values (
       ${caseId}, ${user.userId}, ${interventionDay ?? null}, ${age ?? null},
       ${JSON.stringify(romData ?? {})}, ${JSON.stringify(mmtData ?? {})},
-      ${JSON.stringify(diseaseSpecificData ?? {})}, ${interventionContent}, ${assessment}
+      ${JSON.stringify(diseaseSpecificData ?? {})}, ${contents.join("、")}, ${contents}::text[], ${assessment}
     )
     returning id
   `;
@@ -80,9 +84,9 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (typeof interventionContent === "string" && interventionContent.trim()) {
+  for (const name of contents) {
     await sql`
-      insert into intervention_menu (user_id, name) values (${user.userId}, ${interventionContent.trim()})
+      insert into intervention_menu (user_id, name) values (${user.userId}, ${name})
       on conflict (user_id, name) do nothing
     `;
   }
